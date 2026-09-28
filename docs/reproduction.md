@@ -19,7 +19,7 @@ qk-wanda prune \
 
 Add `--revision <checkpoint-commit>` and `--dataset-revision <dataset-commit>` to pin the input artifacts. `report.json` records the resolved model revision, requested dataset revision, dataset fingerprint, sampled document indices/offsets, and calibration token hash. Keep the saved token array for exact comparisons. Library, tokenizer, kernel, and precision differences can still affect results; these commands specify the protocol rather than promising bitwise agreement across environments.
 
-The CPU quick-start example uses WikiText-2 training text with 16 × 64 calibration tokens; the general `prune` command defaults to 128 × 64. Both are smaller than the paper's calibration setting. C4's first training shard is a substantial download; reuse the Hugging Face cache across runs.
+The quick-start example uses the default 128 × 64 WikiText-2 training tokens, fewer than the paper's calibration setting. C4's first training shard is a substantial download; reuse the Hugging Face cache across runs.
 
 ## Matched methods and allocation controls
 
