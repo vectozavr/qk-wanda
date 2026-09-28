@@ -1,0 +1,13 @@
+cff-version: 1.2.0
+message: "If you use this implementation, please cite QK-Wanda."
+type: software
+title: "QK-Wanda: Coupling Queries and Keys for Unstructured Pruning"
+authors:
+  - family-names: Ilin
+    given-names: Ivan
+  - family-names: Richtárik
+    given-names: Peter
+version: 0.1.0
+date-released: 2026-09-28
+repository-code: "https://github.com/vectozavr/qk-wanda"
+license: MIT

@@ -1,0 +1,13 @@
+QK-Wanda
+Copyright (c) 2026 Ivan Ilin and Peter Richtárik
+
+The block-input capture/replay workflow and Wanda calibration/scoring routines
+are adapted from Wanda (https://github.com/locuslab/wanda), distributed under
+the MIT License, Copyright (c) 2023 CMU LocusLab. Wanda builds on the SparseGPT
+pruning workflow (https://github.com/IST-DASLab/sparsegpt).
+
+The QK-Wanda score implementation, grouped-query and causal extensions,
+shared-budget selection, public package, and tests include modifications by
+Ivan Ilin and Peter Richtárik. All code in this repository is distributed under
+the MIT License. Pretrained model weights and datasets are not distributed
+with this repository and retain their respective licenses.

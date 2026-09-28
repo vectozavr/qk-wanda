@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=77,<82", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qk-wanda"
+version = "0.1.0"
+description = "Coupling queries and keys for unstructured language-model pruning"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE", "NOTICE"]
+authors = [{name = "Ivan Ilin"}, {name = "Peter Richtárik"}]
+dependencies = [
+    "torch>=2.6", "numpy>=1.26", "transformers>=4.45.2,<5",
+    "accelerate>=0.34,<2", "safetensors>=0.4.5", "sentencepiece>=0.2",
+]
+
+[project.optional-dependencies]
+data = ["datasets>=2.21,<4"]
+dev = ["pytest>=8", "ruff>=0.11", "build>=1.2"]
+
+[project.scripts]
+qk-wanda = "qk_wanda.cli:main"
+
+[project.urls]
+Repository = "https://github.com/vectozavr/qk-wanda"
+Issues = "https://github.com/vectozavr/qk-wanda/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]
