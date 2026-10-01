@@ -17,12 +17,18 @@ from .adapters import (
     prepare_qk_calibration_input,
 )
 from .masks import build_pruning_mask, build_shared_qk_masks
-from .scoring import QKWandaAccumulator, WandaInputAccumulator
+from .scoring import (
+    DEFAULT_QK_VARIANT,
+    QK_WANDA_LABELS,
+    QK_WANDA_VARIANTS,
+    QKWandaAccumulator,
+    WandaInputAccumulator,
+)
 
 SUPPORTED_MODEL_TYPES = ("llama", "qwen2", "mistral", "opt")
 
 
-def validate_model(model, *, variant="causal", seqlen=None):
+def validate_model(model, *, variant=DEFAULT_QK_VARIANT, seqlen=None):
     """Reject layouts whose projection outputs do not define this objective."""
     kind = getattr(model.config, "model_type", None)
     if kind not in SUPPORTED_MODEL_TYPES:
@@ -47,7 +53,7 @@ def validate_model(model, *, variant="causal", seqlen=None):
         sliding = getattr(model.config, "sliding_window", None)
         if kind == "qwen2" and not getattr(model.config, "use_sliding_window", False):
             sliding = None
-        if sliding and seqlen > sliding:
+        if variant in ("causal", "rope") and sliding and seqlen > sliding:
             raise ValueError(
                 "Use calibration length <= sliding_window: the score uses a full causal mask."
             )
@@ -101,7 +107,7 @@ def prune_model(
     sparsity: float = 0.5,
     method: str = "qk-wanda",
     budget: str | None = None,
-    variant: str = "causal",
+    variant: str = DEFAULT_QK_VARIANT,
     scope: str = "qk",
     rounding: str = "ceil",
     batch_size: int = 1,
@@ -115,6 +121,11 @@ def prune_model(
     padding. Each row is an independent attention context. Hidden states are
     captured once and replayed block by block. A block's sparse output becomes
     the next block's input. Both Q/K masks are chosen before either is applied.
+
+    ``variant`` defaults to the paper's full QK objective, ``'unmasked'``.
+    ``'causal'`` selects QK-Wanda-M; ``'rope'`` selects QK-Wanda-MR, including
+    both causal masking and RoPE. These switches change the scoring objective,
+    not the model's attention computation.
 
     ``budget`` defaults to shared for QK-Wanda and row for Wanda. ``scope='block'``
     additionally prunes V/O and MLP projections with row-wise Wanda. Biases,
@@ -132,10 +143,10 @@ def prune_model(
         raise ValueError("Wanda supports row or separate matrix budgets, not shared Q/K scores.")
     if not math.isfinite(sparsity) or not 0 <= sparsity < 1:
         raise ValueError("sparsity must be finite and in [0, 1)")
-    if variant not in ("causal", "unmasked", "rope"):
+    if variant not in QK_WANDA_VARIANTS:
         raise ValueError("variant must be causal, unmasked or rope")
-    if method == "wanda" and variant != "causal":
-        raise ValueError("variant changes QK-Wanda only; leave it at causal for Wanda.")
+    if method == "wanda" and variant != DEFAULT_QK_VARIANT:
+        raise ValueError("variant changes QK-Wanda only; leave it at its default for Wanda.")
     if scope not in ("qk", "block") or rounding not in ("ceil", "floor"):
         raise ValueError("scope must be qk/block and rounding must be ceil/floor")
     if not isinstance(batch_size, int) or batch_size <= 0:
@@ -161,6 +172,7 @@ def prune_model(
         "schema_version": 1,
         "method": method,
         "variant": variant if method == "qk-wanda" else None,
+        "scoring_label": QK_WANDA_LABELS[variant] if method == "qk-wanda" else "Wanda",
         "budget": budget,
         "scope": scope,
         "rounding": rounding,

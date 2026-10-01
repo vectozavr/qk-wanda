@@ -21,7 +21,9 @@ model.save_pretrained("pruned-model", safe_serialization=True)
 # On a fresh copy of the same original model: apply_masks(fresh_model, "masks.npz")
 ```
 
-`prune_model` changes the supplied model in place. It selects both Q/K masks before applying either, then passes the pruned block's output to the next block. The [algorithm notes](algorithm.md) describe the score and normalization conventions.
+`prune_model` changes the supplied model in place. It selects both QK masks before applying either, then passes the pruned block's output to the next block. The [algorithm notes](algorithm.md) describe the score and normalization conventions.
+
+The default is `variant="unmasked"`, the paper's QK-Wanda method, with a shared QK budget. To run QK-Wanda-M, pass `variant="causal"`; `variant="rope"` runs QK-Wanda-MR. The report records both the option in `variant` and its paper name in `scoring_label`. These options change scoring, not the model's attention computation.
 
 ## Memory and reproducibility
 
@@ -30,4 +32,3 @@ model.save_pretrained("pruned-model", safe_serialization=True)
 - **Calibration:** `--calibration-text file.txt` samples one document per nonempty line. Alternatively, provide an integer `[N, T]` `.npy` with `--calibration-tokens`. No padding or cross-sequence attention is introduced.
 - **Numerics:** scoring accumulates in FP32. For models producing nonfinite FP16 activations, use `--dtype bfloat16` or `float32`. Device, dtype, library version, and calibration changes may change masks.
 - **Reproducibility:** pin `--revision`, save calibration IDs, and keep `report.json` with the masks. Smaller local reconstruction loss does not guarantee better downstream quality.
-

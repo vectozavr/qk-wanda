@@ -83,6 +83,22 @@ class QKWandaScoreTests(unittest.TestCase):
         torch.manual_seed(17)
         self.dtype = torch.float64
 
+    def test_default_scores_include_future_token_pairs(self):
+        x = torch.eye(2, dtype=self.dtype)
+        wq = torch.tensor([[2.0, 1.0]], dtype=self.dtype)
+        wk = torch.tensor([[1.0, 3.0]], dtype=self.dtype)
+        default = QKWandaAccumulator(1, 1, 1, accumulation_dtype=self.dtype)
+        default.add_batch(x, project(x, wq), project(x, wk))
+        qs, ks = default.scores(wq, wk)
+        # Full QK reconstruction counts both keys for each query.
+        torch.testing.assert_close(qs, torch.tensor([[40.0, 10.0]], dtype=self.dtype))
+        torch.testing.assert_close(ks, torch.tensor([[5.0, 45.0]], dtype=self.dtype))
+        causal = QKWandaAccumulator(1, 1, 1, variant="causal", accumulation_dtype=self.dtype)
+        causal.add_batch(x, project(x, wq), project(x, wk))
+        cq, ck = causal.scores(wq, wk)
+        torch.testing.assert_close(cq, torch.tensor([[4.0, 10.0]], dtype=self.dtype))
+        torch.testing.assert_close(ck, torch.tensor([[5.0, 9.0]], dtype=self.dtype))
+
     def assert_all_scalar_deletions_match(
         self,
         num_query_heads,

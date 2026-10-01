@@ -15,6 +15,7 @@ from . import __version__
 from .data import calibration_data, evaluation_tokens, save_calibration
 from .evaluation import perplexity
 from .pruning import prune_model, validate_model
+from .scoring import DEFAULT_QK_VARIANT, QK_WANDA_VARIANTS
 from .serialization import MaskArchive, apply_masks
 
 
@@ -67,7 +68,12 @@ def build_parser():
         choices=("shared", "separate", "row"),
         help="Default: shared for QK-Wanda; row for Wanda",
     )
-    prune.add_argument("--variant", choices=("causal", "unmasked", "rope"), default="causal")
+    prune.add_argument(
+        "--variant",
+        choices=QK_WANDA_VARIANTS,
+        default=DEFAULT_QK_VARIANT,
+        help="Default: unmasked QK-Wanda; causal: QK-Wanda-M; rope: QK-Wanda-MR",
+    )
     prune.add_argument("--scope", choices=("qk", "block"), default="qk")
     prune.add_argument("--rounding", choices=("ceil", "floor"), default="ceil")
     source = prune.add_mutually_exclusive_group()
@@ -147,7 +153,7 @@ def load_model(args):
         **attention,
         **common,
     ).eval()
-    validate_model(model)
+    validate_model(model, variant=getattr(args, "variant", DEFAULT_QK_VARIANT))
     return model, tokenizer
 
 
@@ -188,7 +194,7 @@ def main(argv=None):
             raise ValueError("Require 0 <= sparsity < 1 and a positive batch-size")
         if args.method == "wanda" and args.budget == "shared":
             raise ValueError("Wanda supports row or separate budgets")
-        if args.method == "wanda" and args.variant != "causal":
+        if args.method == "wanda" and args.variant != DEFAULT_QK_VARIANT:
             raise ValueError("--variant applies to QK-Wanda only")
         random.seed(args.seed)
         np.random.seed(args.seed)

@@ -7,7 +7,7 @@ authors:
     given-names: Ivan
   - family-names: Richtárik
     given-names: Peter
-version: 0.1.0
-date-released: 2026-09-28
+version: 0.2.0
+date-released: 2026-10-01
 repository-code: "https://github.com/vectozavr/qk-wanda"
 license: MIT

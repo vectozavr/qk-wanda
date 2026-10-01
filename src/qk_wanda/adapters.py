@@ -262,7 +262,7 @@ def _rope_for_layer(decoder_layer, hidden_states: torch.Tensor, forward_kwargs):
     position_ids = forward_kwargs.get("position_ids")
     if rotary is None or position_ids is None:
         raise ValueError(
-            "QK-Wanda-R could not obtain the model's RoPE tensors; use Transformers 4.45.2 "
+            "QK-Wanda-MR could not obtain the model's RoPE tensors; use Transformers 4.45.2 "
             "or provide decoder position_embeddings"
         )
     return rotary(hidden_states, position_ids)

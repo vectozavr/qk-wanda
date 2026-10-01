@@ -11,6 +11,12 @@ import torch
 from torch import nn
 
 QK_WANDA_VARIANTS = ("unmasked", "causal", "rope")
+DEFAULT_QK_VARIANT = "unmasked"
+QK_WANDA_LABELS = {
+    "unmasked": "QK-Wanda",
+    "causal": "QK-Wanda-M",
+    "rope": "QK-Wanda-MR",
+}
 
 
 def _ensure_batched(tensor: torch.Tensor, name: str) -> torch.Tensor:
@@ -72,7 +78,7 @@ def apply_llama_rope(
     """Apply the split-half RoPE layout used by Hugging Face Llama.
 
     ``states`` must be ``[B, T, H, d_h]``.  Hugging Face's ``rotate_half`` pairs raw coordinate
-    ``r`` with ``r + d_h/2``.  QK-Wanda-R must follow this real model layout to
+    ``r`` with ``r + d_h/2``.  QK-Wanda-MR must follow this real model layout to
     score deletion of raw projection rows correctly.
     """
 
@@ -113,7 +119,7 @@ class QKWandaAccumulator:
         num_query_heads: int,
         num_key_value_heads: int,
         head_dim: int,
-        variant: str = "causal",
+        variant: str = DEFAULT_QK_VARIANT,
         accumulation_dtype: torch.dtype = torch.float32,
     ):
         if variant not in QK_WANDA_VARIANTS:
@@ -126,7 +132,7 @@ class QKWandaAccumulator:
                 "num_query_heads must be divisible by num_key_value_heads"
             )
         if variant == "rope" and head_dim % 2:
-            raise ValueError("QK-Wanda-R requires an even head_dim")
+            raise ValueError("QK-Wanda-MR requires an even head_dim")
 
         self.num_query_heads = num_query_heads
         self.num_key_value_heads = num_key_value_heads
@@ -276,7 +282,7 @@ class QKWandaAccumulator:
             self._add_causal(x, q, k, weights)
         else:
             if cos is None or sin is None:
-                raise ValueError("QK-Wanda-R requires the model's RoPE cos and sin tensors")
+                raise ValueError("QK-Wanda-MR requires the model's RoPE cos and sin tensors")
             self._add_rope(x, q, k, weights, cos, sin)
 
         self.num_sequences += batch_size

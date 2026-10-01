@@ -5,7 +5,9 @@ Paper *(arXiv link to be added)* · [Installation](#install) · [Citation](#cita
 
 ![Wanda uses row-wise budgets; QK-Wanda adds opposite-projection factors and shares the budget across query and key weights.](assets/wanda-vs-qk-wanda.jpg)
 
-QK-Wanda augments Wanda scores with query–key interactions, allowing a shared pruning budget across Q and K. It requires calibration forward passes, without gradients, retraining, or updates to retained weights. The illustration shows a simplified unmasked example; the default method accounts for causal attention before rotary position embeddings (RoPE).
+[Vector illustration](assets/wanda-vs-qk-wanda.svg) · [Numerical example](assets/illustration.json)
+
+QK-Wanda augments Wanda scores with query–key interactions, allowing a shared pruning budget across query and key weights. It requires calibration forward passes, without gradients, retraining, or updates to retained weights. The default method reconstructs all QK products before rotary position embeddings (RoPE), without a causal mask or centering, as in the paper. The illustration uses this same objective for one token and one head.
 
 ## Install
 
@@ -33,7 +35,9 @@ qk-wanda prune \
   --output runs/qwen-0.5b-cpu
 ```
 
-This removes **50% of the combined Q/K weights in each transformer block**, leaving other parameters unchanged. Change `--model` to another supported Hugging Face ID or local checkpoint; use `--device cuda:0` for GPU execution. The CPU example needs several GB of RAM. Weights and calibration data download on the first run and are cached afterward.
+This removes **50% of the combined query and key weights in each transformer block**, leaving other parameters unchanged. Change `--model` to another supported Hugging Face ID or local checkpoint; use `--device cuda:0` for GPU execution. The CPU example needs several GB of RAM. Weights and calibration data download on the first run and are cached afterward.
+
+In the illustration, both methods remove four of eight weights. The resulting squared QK reconstruction error is **81 for Wanda and 9 for QK-Wanda**. This example illustrates the criterion; joint reconstruction is not guaranteed to improve for every mask or model.
 
 The output directory must be new or empty. It contains:
 
@@ -80,7 +84,7 @@ Evaluate its masks using the command above, replacing the mask path. Add `--budg
 | --- | --- |
 | Llama | Llama 2, Llama 3/3.1/3.2, TinyLlama |
 | Qwen2 | Qwen2, Qwen2.5 |
-| Mistral | Standard Mistral decoders with separate Q/K projections |
+| Mistral | Standard Mistral decoders with separate QK projections |
 | OPT | OPT checkpoints |
 
 Both multi-head and grouped-query attention are supported. Mistral and OPT are implementation extensions beyond the paper's benchmarks. See [model support](docs/model-support.md) for tested versions and architecture restrictions.
@@ -88,9 +92,9 @@ Both multi-head and grouped-query attention are supported. Mistral and OPT are i
 ## Options
 
 - **Calibration:** defaults to 128 WikiText-2 training sequences of 64 tokens, with seed 0. Change `--calibration`, `--nsamples`, `--seqlen`, or `--seed`; use `--calibration-text file.txt` for your own text or `--calibration-tokens tokens.npy` for saved token IDs.
-- **Budget:** QK-Wanda defaults to a shared Q/K budget per block. `--budget separate` assigns a budget to each projection matrix; `--budget row` assigns one to each output row. Wanda defaults to row-wise budgets and supports separate matrix budgets, but not shared Q/K budgets.
-- **Scope:** `--scope block` also prunes V/O and MLP projections using Wanda; the default prunes only Q/K.
-- **Scoring:** `--variant unmasked` removes causal masking; `--variant rope` includes RoPE in the objective (unavailable for OPT).
+- **Budget:** QK-Wanda defaults to a shared QK budget per block. `--budget separate` assigns a budget to each projection matrix; `--budget row` assigns one to each output row. Wanda defaults to row-wise budgets and supports separate matrix budgets, but not shared QK budgets.
+- **Scope:** `--scope block` also prunes value, output, and MLP projections using Wanda; the default prunes only query and key weights.
+- **Scoring:** `--variant unmasked` is the default QK-Wanda method. `--variant causal` selects QK-Wanda-M. `--variant rope` selects QK-Wanda-MR, which includes both causal masking and RoPE (unavailable for OPT). The model's attention computation stays unchanged for every scoring variant.
 - **Precision and memory:** `--dtype` overrides automatic precision; `--cpu-mask-sort` moves mask sorting to CPU to reduce GPU memory use.
 
 Run `qk-wanda prune --help` or `qk-wanda evaluate --help` for all flags. For integration into your own code, see the [Python API](docs/python-api.md); the [algorithm notes](docs/algorithm.md) explain scoring and mask selection.
@@ -103,6 +107,8 @@ pytest -q
 ```
 
 Tests run offline with tiny model fixtures and check scores, pruning masks, model integrations, checkpoint reloads, and evaluation.
+
+Version 0.2.0 changes the default from causal scoring to the paper's unmasked method. To reproduce a version 0.1.0 QK-Wanda run, explicitly use `--variant causal`. See [release notes](CHANGELOG.md).
 
 ## Citation
 

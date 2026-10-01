@@ -10,7 +10,8 @@ from .model_helpers import tiny_model
 from qk_wanda.evaluation import perplexity
 from qk_wanda.adapters import decoder_layers
 from qk_wanda.masks import build_shared_qk_masks
-from qk_wanda.scoring import QKWandaAccumulator
+from qk_wanda.scoring import QK_WANDA_LABELS, QKWandaAccumulator
+from qk_wanda.pruning import validate_model
 
 FAMILIES = ("llama", "qwen2", "mistral", "opt")
 
@@ -31,7 +32,7 @@ def test_block_replay_matches_full_forward_reference(family, attention):
             nq = reference.config.num_attention_heads
             nk = getattr(reference.config, "num_key_value_heads", nq)
             q, k = layer.self_attn.q_proj, layer.self_attn.k_proj
-            acc = QKWandaAccumulator(nq, nk, q.out_features // nq)
+            acc = QKWandaAccumulator(nq, nk, q.out_features // nq, variant="unmasked")
             handles = [
                 q.register_forward_hook(acc.capture_query),
                 k.register_forward_hook(acc.capture_key),
@@ -46,7 +47,9 @@ def test_block_replay_matches_full_forward_reference(family, attention):
             qm, km = build_shared_qk_masks(qs, ks, 0.5)
             q.weight.masked_fill_(qm, 0)
             k.weight.masked_fill_(km, 0)
-    prune_model(model, tokens)
+    report = prune_model(model, tokens)
+    assert report["variant"] == "unmasked"
+    assert report["scoring_label"] == "QK-Wanda"
     for (name, expected), (_, actual) in zip(
         reference.named_parameters(), model.named_parameters()
     ):
@@ -57,12 +60,14 @@ def test_block_replay_matches_full_forward_reference(family, attention):
 @pytest.mark.parametrize(
     "method,budget,variant",
     [
+        ("qk-wanda", "shared", "unmasked"),
+        ("qk-wanda", "separate", "unmasked"),
         ("qk-wanda", "shared", "causal"),
         ("qk-wanda", "separate", "causal"),
         ("qk-wanda", "row", "unmasked"),
         ("qk-wanda", "shared", "rope"),
-        ("wanda", "row", "causal"),
-        ("wanda", "separate", "causal"),
+        ("wanda", "row", "unmasked"),
+        ("wanda", "separate", "unmasked"),
     ],
 )
 def test_prune_replay_and_scope(family, method, budget, variant, tmp_path):
@@ -83,6 +88,10 @@ def test_prune_replay_and_scope(family, method, budget, variant, tmp_path):
         mask_callback=archive,
     )
     assert report["achieved_sparsity"] == 0.5
+    assert report["variant"] == (variant if method == "qk-wanda" else None)
+    assert report["scoring_label"] == (
+        QK_WANDA_LABELS[variant] if method == "qk-wanda" else "Wanda"
+    )
     assert model.config.use_cache == original.config.use_cache
     assert not model.training
     for name, parameter in model.named_parameters():
@@ -164,6 +173,8 @@ def test_validation_and_failure_restore_model():
     tokens = torch.randint(3, 64, (2, 8))
     with pytest.raises(ValueError, match="Wanda supports"):
         prune_model(model, tokens, method="wanda", budget="shared")
+    with pytest.raises(ValueError, match="variant changes QK-Wanda only"):
+        prune_model(model, tokens, method="wanda", variant="causal")
     with pytest.raises(ValueError, match="integer"):
         prune_model(model, tokens.float())
     model.config.model_type = "qwen3"
@@ -180,6 +191,18 @@ def test_validation_and_failure_restore_model():
     assert model.model.layers[0] is old
     assert model.training and model.config.use_cache
     assert all(not m._forward_hooks for m in model.modules())
+
+
+def test_sliding_window_restriction_applies_only_to_masked_scores():
+    model = tiny_model("mistral")
+    model.config.sliding_window = 4
+    tokens = torch.randint(3, 64, (3, 12))
+    for variant in ("causal", "rope"):
+        with pytest.raises(ValueError, match="sliding_window"):
+            validate_model(model, variant=variant, seqlen=12)
+    report = prune_model(model, tokens)
+    assert report["variant"] == "unmasked"
+    assert report["achieved_sparsity"] == 0.5
 
 
 def test_invalid_archive_is_atomic(tmp_path):

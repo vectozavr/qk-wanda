@@ -1,23 +1,26 @@
 # Reproduction guide
 
-## Main calibration protocol
+## Main method and calibration protocol
 
-The main Q/K-only experiments use **256 distinct C4 document windows of 2048 tokens**, split into **8192 independent sequences of 64 tokens**: 524,288 calibration tokens in total. Sampling uses seed 0 and the first English C4 training shard. Windows never cross document boundaries.
+The main method is QK-Wanda with an unmasked QK objective and a shared budget. This is the default in both the CLI and Python API. Use `--variant causal` only for the masked ablation, QK-Wanda-M; `--variant rope` selects QK-Wanda-MR.
 
-Use the same tokenizer and checkpoint revision for sampling, pruning, and evaluation. The script below uses the original Transformer implementation version, FP16 weights, and a shared Q/K budget. Qwen2.5-72B uses BF16 instead.
+The main QK-only experiments use **256 distinct C4 document windows of 2048 tokens**, split into **8192 independent sequences of 64 tokens**: 524,288 calibration tokens in total. Sampling uses seed 0 and the first English C4 training shard. Windows never cross document boundaries.
+
+Use the same tokenizer and checkpoint revision for sampling, pruning, and evaluation. The script below uses the original Transformer implementation version, FP16 weights, and a shared QK budget. Qwen2.5-72B uses BF16 instead.
 
 ```bash
 python -m pip install 'transformers==4.45.2'
 qk-wanda prune \
   --model meta-llama/Llama-2-7b-hf \
+  --revision 01c7f73d771dfac7d292323805ebc428287df4f9 \
   --output runs/llama2-7b-qk-s80 \
   --dtype float16 --attn-implementation eager \
   --calibration c4 --nsamples 8192 --seqlen 64 --window-length 2048 \
-  --seed 0 --sparsity 0.8 --batch-size 1 \
+  --seed 0 --sparsity 0.8 --batch-size 32 \
   --save-calibration --save-model --eval
 ```
 
-Add `--revision <checkpoint-commit>` and `--dataset-revision <dataset-commit>` to pin the input artifacts. `report.json` records the resolved model revision, requested dataset revision, dataset fingerprint, sampled document indices/offsets, and calibration token hash. Keep the saved token array for exact comparisons. Library, tokenizer, kernel, and precision differences can still affect results; these commands specify the protocol rather than promising bitwise agreement across environments.
+The [checkpoint list](checkpoints.md) provides the paper's model/tokenizer revisions for all 15 models. Add `--dataset-revision <dataset-commit>` to pin the dataset. `report.json` records the resolved model revision, requested dataset revision, dataset fingerprint, sampled document indices/offsets, and calibration token hash. Keep the saved token array for exact comparisons. Library, tokenizer, kernel, and precision differences can still affect results; these commands specify the protocol rather than promising bitwise agreement across environments.
 
 The quick-start example uses the default 128 × 64 WikiText-2 training tokens, fewer than the paper's calibration setting. C4's first training shard is a substantial download; reuse the Hugging Face cache across runs.
 
@@ -29,10 +32,12 @@ Reuse the saved calibration file on a fresh copy of the same original checkpoint
 bash examples/compare_budgets.sh \
   meta-llama/Llama-2-7b-hf \
   runs/llama2-7b-qk-s80/calibration.npy \
-  runs/llama2-7b-controls 0.8 --dtype float16 --attn-implementation eager
+  runs/llama2-7b-controls 0.8 \
+  --revision 01c7f73d771dfac7d292323805ebc428287df4f9 \
+  --dtype float16 --attn-implementation eager --batch-size 32
 ```
 
-The script runs row-wise Wanda, matrix-budget Wanda, separate-budget QK-Wanda, and shared-budget QK-Wanda. All use the same token IDs, sparsity, and ceiling convention. It evaluates WikiText-2 PPL and saves every mask. Shared budgets select a fraction of the **combined parameter count**, not the mean of the Q and K sparsities. For hybrid full-block pruning, add `--scope block --save-model`; non-Q/K projection budgets stay row-wise.
+The script runs row-wise Wanda, matrix-budget Wanda, separate-budget QK-Wanda, and shared-budget QK-Wanda. All use the same token IDs, sparsity, and ceiling convention. It evaluates WikiText-2 PPL and saves every mask. Shared budgets select a fraction of the **combined parameter count**, not the mean of the Q and K sparsities. For hybrid full-block pruning, add `--scope block --save-model`; non-QK projection budgets stay row-wise.
 
 ## Perplexity
 

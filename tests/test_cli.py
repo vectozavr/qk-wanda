@@ -14,7 +14,8 @@ from qk_wanda.data import sample_documents
 from .model_helpers import tiny_model
 
 
-def test_cli_offline_round_trip(tmp_path, capsys):
+@pytest.mark.parametrize("method", ("qk-wanda", "wanda"))
+def test_cli_offline_round_trip(method, tmp_path, capsys):
     model_path = tmp_path / "original"
     tiny_model("qwen2").save_pretrained(model_path)
     vocab = {"[UNK]": 0, **{f"w{i}": i for i in range(1, 64)}}
@@ -51,11 +52,15 @@ def test_cli_offline_round_trip(tmp_path, capsys):
             "--eval",
             "--batch-size",
             "2",
+            *(["--method", "wanda"] if method == "wanda" else []),
             *shared,
         ]
     )
     report = json.loads((output / "report.json").read_text())
     assert report["achieved_sparsity"] == 0.5
+    assert report["variant"] == ("unmasked" if method == "qk-wanda" else None)
+    assert report["scoring_label"] == ("QK-Wanda" if method == "qk-wanda" else "Wanda")
+    assert report["budget"] == ("shared" if method == "qk-wanda" else "row")
     for name, source in (("saved", output / "model"), ("replayed", model_path)):
         args = [
             "evaluate",
@@ -76,6 +81,24 @@ def test_cli_offline_round_trip(tmp_path, capsys):
     assert torch.isfinite(sparse(torch.tensor([[3, 4, 5]])).logits).all()
     with pytest.raises(ValueError, match="existing results"):
         main(["prune", "--model", "must-not-download", "--output", str(output)])
+
+
+@pytest.mark.parametrize("variant", ("causal", "rope"))
+def test_wanda_rejects_qk_variant_before_loading(variant, tmp_path):
+    with pytest.raises(ValueError, match="--variant applies to QK-Wanda only"):
+        main(
+            [
+                "prune",
+                "--model",
+                "must-not-download",
+                "--output",
+                str(tmp_path / "run"),
+                "--method",
+                "wanda",
+                "--variant",
+                variant,
+            ]
+        )
 
 
 def test_calibration_windows_stay_independent():

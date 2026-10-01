@@ -1,0 +1,235 @@
+{
+  "X": [
+    [
+      1.0
+    ],
+    [
+      2.0
+    ]
+  ],
+  "WQ": [
+    [
+      -1.0,
+      1.0
+    ],
+    [
+      1.0,
+      1.0
+    ]
+  ],
+  "WK": [
+    [
+      -2.0,
+      2.0
+    ],
+    [
+      3.0,
+      -1.0
+    ]
+  ],
+  "wanda_scores_Q": [
+    [
+      1.0,
+      2.0
+    ],
+    [
+      1.0,
+      2.0
+    ]
+  ],
+  "wanda_scores_K": [
+    [
+      2.0,
+      4.0
+    ],
+    [
+      3.0,
+      2.0
+    ]
+  ],
+  "qk_scores_Q": [
+    [
+      2.0,
+      4.0
+    ],
+    [
+      1.0,
+      2.0
+    ]
+  ],
+  "qk_scores_K": [
+    [
+      2.0,
+      4.0
+    ],
+    [
+      9.0,
+      6.0
+    ]
+  ],
+  "wanda_removed_Q": [
+    [
+      true,
+      false
+    ],
+    [
+      true,
+      false
+    ]
+  ],
+  "wanda_removed_K": [
+    [
+      true,
+      false
+    ],
+    [
+      false,
+      true
+    ]
+  ],
+  "qk_removed_Q": [
+    [
+      true,
+      false
+    ],
+    [
+      true,
+      true
+    ]
+  ],
+  "qk_removed_K": [
+    [
+      true,
+      false
+    ],
+    [
+      false,
+      false
+    ]
+  ],
+  "direct_single_deletion_checks": [
+    {
+      "projection": "Q",
+      "row": 0,
+      "column": 0,
+      "displayed_score": 2.0,
+      "displayed_score_squared": 4.0,
+      "direct_squared_deletion_loss": 4.0
+    },
+    {
+      "projection": "Q",
+      "row": 0,
+      "column": 1,
+      "displayed_score": 4.0,
+      "displayed_score_squared": 16.0,
+      "direct_squared_deletion_loss": 16.0
+    },
+    {
+      "projection": "Q",
+      "row": 1,
+      "column": 0,
+      "displayed_score": 1.0,
+      "displayed_score_squared": 1.0,
+      "direct_squared_deletion_loss": 1.0
+    },
+    {
+      "projection": "Q",
+      "row": 1,
+      "column": 1,
+      "displayed_score": 2.0,
+      "displayed_score_squared": 4.0,
+      "direct_squared_deletion_loss": 4.0
+    },
+    {
+      "projection": "K",
+      "row": 0,
+      "column": 0,
+      "displayed_score": 2.0,
+      "displayed_score_squared": 4.0,
+      "direct_squared_deletion_loss": 4.0
+    },
+    {
+      "projection": "K",
+      "row": 0,
+      "column": 1,
+      "displayed_score": 4.0,
+      "displayed_score_squared": 16.0,
+      "direct_squared_deletion_loss": 16.0
+    },
+    {
+      "projection": "K",
+      "row": 1,
+      "column": 0,
+      "displayed_score": 9.0,
+      "displayed_score_squared": 81.0,
+      "direct_squared_deletion_loss": 81.0
+    },
+    {
+      "projection": "K",
+      "row": 1,
+      "column": 1,
+      "displayed_score": 6.0,
+      "displayed_score_squared": 36.0,
+      "direct_squared_deletion_loss": 36.0
+    }
+  ],
+  "selection_boundary_tie": false,
+  "dense_product": [
+    [
+      5.0
+    ]
+  ],
+  "joint_deletion_checks": {
+    "Wanda": {
+      "Q": [
+        [
+          2.0
+        ],
+        [
+          2.0
+        ]
+      ],
+      "K": [
+        [
+          4.0
+        ],
+        [
+          3.0
+        ]
+      ],
+      "product": [
+        [
+          14.0
+        ]
+      ],
+      "squared_error": 81.0,
+      "sum_individual_costs": 45.0
+    },
+    "QK-Wanda": {
+      "Q": [
+        [
+          2.0
+        ],
+        [
+          0.0
+        ]
+      ],
+      "K": [
+        [
+          4.0
+        ],
+        [
+          1.0
+        ]
+      ],
+      "product": [
+        [
+          8.0
+        ]
+      ],
+      "squared_error": 9.0,
+      "sum_individual_costs": 13.0
+    }
+  },
+  "note": "Unmasked, single-sequence, single-head toy example; no biases. The displayed scores are square roots of the manuscript squared scores; sorting and masks are unchanged. Calibration has one token with X=(1,2)^T. No claim of universal downstream improvement."
+}
