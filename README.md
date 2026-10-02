@@ -1,10 +1,8 @@
-# QK-Wanda: Coupling Queries and Keys for Unstructured Pruning
+# QK-Wanda: Coupling Queries and Keys for Pruning
 
-[Paper (arXiv:2610.01554)](https://arxiv.org/abs/2610.01554) · [Installation](#install) · [Citation](#citation)
+[![arXiv](https://img.shields.io/badge/arXiv-2610.01554-b31b1b.svg)](https://arxiv.org/abs/2610.01554)
 
 ![Wanda uses row-wise budgets; QK-Wanda adds opposite-projection factors and shares the budget across query and key weights.](assets/wanda-vs-qk-wanda.jpg)
-
-[Vector illustration](assets/wanda-vs-qk-wanda.svg) · [Numerical example](assets/illustration.json)
 
 QK-Wanda augments Wanda scores with query–key interactions, allowing a shared pruning budget across query and key weights. It requires calibration forward passes, without gradients, retraining, or updates to retained weights. The default method reconstructs all QK products before rotary position embeddings (RoPE), without a causal mask or centering, as in the paper. The illustration uses this same objective for one token and one head.
 
