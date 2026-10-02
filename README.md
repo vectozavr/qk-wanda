@@ -1,13 +1,31 @@
 # QK-Wanda: Coupling Queries and Keys for Unstructured Pruning
 
-Paper *(arXiv link to be added)* · [Installation](#install) · [Citation](#citation)
-<!-- Replace the paper placeholder with its arXiv link when available; update BibTeX too. -->
+[Paper (arXiv:2610.01554)](https://arxiv.org/abs/2610.01554) · [Installation](#install) · [Citation](#citation)
 
 ![Wanda uses row-wise budgets; QK-Wanda adds opposite-projection factors and shares the budget across query and key weights.](assets/wanda-vs-qk-wanda.jpg)
 
 [Vector illustration](assets/wanda-vs-qk-wanda.svg) · [Numerical example](assets/illustration.json)
 
 QK-Wanda augments Wanda scores with query–key interactions, allowing a shared pruning budget across query and key weights. It requires calibration forward passes, without gradients, retraining, or updates to retained weights. The default method reconstructs all QK products before rotary position embeddings (RoPE), without a causal mask or centering, as in the paper. The illustration uses this same objective for one token and one head.
+
+## Citation
+
+If you use QK-Wanda in your work, please cite the [accompanying paper](https://arxiv.org/abs/2610.01554):
+
+```bibtex
+@misc{ilin2026qkwanda,
+  title         = {{QK-Wanda}: Coupling Queries and Keys for Unstructured Pruning},
+  author        = {Ilin, Ivan and Richt{\'a}rik, Peter},
+  year          = {2026},
+  eprint        = {2610.01554},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG},
+  doi           = {10.48550/arXiv.2610.01554},
+  url           = {https://arxiv.org/abs/2610.01554}
+}
+```
+
+See [CITATION.cff](CITATION.cff) for software metadata and the preferred paper citation.
 
 ## Install
 
@@ -109,20 +127,6 @@ pytest -q
 Tests run offline with tiny model fixtures and check scores, pruning masks, model integrations, checkpoint reloads, and evaluation.
 
 Version 0.2.0 changes the default from causal scoring to the paper's unmasked method. To reproduce a version 0.1.0 QK-Wanda run, explicitly use `--variant causal`. See [release notes](CHANGELOG.md).
-
-## Citation
-
-If you use QK-Wanda in your work, please cite the accompanying paper:
-
-```bibtex
-@misc{ilin2026qkwanda,
-  title  = {{QK-Wanda}: Coupling Queries and Keys for Unstructured Pruning},
-  author = {Ilin, Ivan and Richt{\'a}rik, Peter},
-  year   = {2026}
-}
-```
-
-See [CITATION.cff](CITATION.cff) for a software citation.
 
 ## Credits
 

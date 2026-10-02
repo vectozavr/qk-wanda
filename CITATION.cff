@@ -11,3 +11,15 @@ version: 0.2.0
 date-released: 2026-10-01
 repository-code: "https://github.com/vectozavr/qk-wanda"
 license: MIT
+preferred-citation:
+  type: article
+  title: "QK-Wanda: Coupling Queries and Keys for Unstructured Pruning"
+  authors:
+    - family-names: Ilin
+      given-names: Ivan
+    - family-names: Richtárik
+      given-names: Peter
+  year: 2026
+  journal: arXiv
+  doi: "10.48550/arXiv.2610.01554"
+  url: "https://arxiv.org/abs/2610.01554"
